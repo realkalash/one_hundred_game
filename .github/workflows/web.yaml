@@ -13,4 +13,4 @@ jobs:
       - uses: subosito/flutter-action@v1
       - uses: erickzanardo/flutter-gh-pages@v7
         with:
-          baseRef: /one_hundred_game/
+              baseHref: /one_hundred_game/
