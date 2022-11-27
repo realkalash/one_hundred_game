@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const MyApp());
 
@@ -50,11 +51,20 @@ class MainPageState extends State<MainPage> {
   int countWins = 0;
   double chanceToLoose = 0;
   int countChancesViewPressed = 0;
-
+  SharedPreferences? prefs;
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _newGame();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        prefs = prefs ?? await SharedPreferences.getInstance();
+        countLooses = prefs?.getInt('countLooses') ?? 0;
+        countWins = prefs?.getInt('countWins') ?? 0;
+      } catch (e) {
+        // ignore: avoid_print
+        print(e);
+      }
+
+      _newGame(false);
     });
     super.initState();
   }
@@ -123,13 +133,6 @@ class MainPageState extends State<MainPage> {
                           color: Colors.red.withOpacity(chanceToLoose / 100)),
                     ),
                   ),
-                  if (isEndGame)
-                    Text(
-                      isWin ? 'You win!' : 'You lose!',
-                      style: Theme.of(context).textTheme.headline3?.copyWith(
-                            color: winLooseTextColor,
-                          ),
-                    ),
                   const Divider(height: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,6 +170,13 @@ class MainPageState extends State<MainPage> {
                           : 'Write a number between 1 and 10',
                     ),
                   ),
+                  if (isEndGame)
+                    Text(
+                      isWin ? 'You win!' : 'You lose!',
+                      style: Theme.of(context).textTheme.headline3?.copyWith(
+                            color: winLooseTextColor,
+                          ),
+                    ),
                   SizedBox(
                     width: double.infinity,
                     child: Padding(
@@ -205,7 +215,7 @@ class MainPageState extends State<MainPage> {
                           child: const Text('Remove last'),
                         ),
                         ElevatedButton(
-                          onPressed: _newGame,
+                          onPressed: () => _newGame(false),
                           child: const Text('New Game'),
                         ),
                       ],
@@ -270,15 +280,28 @@ class MainPageState extends State<MainPage> {
       baseOffset: 0,
       extentOffset: numberController.text.length,
     );
-  }
-
-  Future<void> _newGame() async {
-    setState(() {
-      if (currentSum >= 100) {
+    if (currentSum >= 100) {
+      setState(() {
         if (_isUserTurn()) {
           countWins++;
+          prefs?.setInt('countWins', countWins);
         } else {
           countLooses++;
+          prefs?.setInt('countLooses', countLooses);
+        }
+      });
+    }
+  }
+
+  Future<void> _newGame([bool shouldUpdateCount = true]) async {
+    setState(() {
+      if (currentSum >= 100 && shouldUpdateCount) {
+        if (_isUserTurn()) {
+          countWins++;
+          prefs?.setInt('countWins', countWins);
+        } else {
+          countLooses++;
+          prefs?.setInt('countLooses', countLooses);
         }
       }
       numbers.clear();
